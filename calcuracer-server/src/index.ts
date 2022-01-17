@@ -13,9 +13,8 @@ import { buildSchema } from "type-graphql";
 import { UserResolver } from "./resolvers/user";
 
 const main = async () => {
-  mongoose.connect(
-    "mongodb+srv://admin:BHUTz28mpK2YG7GM@calcuracercluster.buhbo.mongodb.net/myFirstDatabase?retryWrites=true&w=majority"
-  );
+  mongoose.connect(process.env.DATABASE_URL);
+  x;
 
   const app = express();
 
