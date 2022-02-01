@@ -10,10 +10,13 @@ import mongoose from "mongoose";
 import { ApolloServerPluginLandingPageGraphQLPlayground } from "apollo-server-core";
 import { ApolloServer } from "apollo-server-express";
 import { buildSchema } from "type-graphql";
+import { HelloResolver } from "./resolvers/hello";
 import { UserResolver } from "./resolvers/user";
 
-const main = () => {
-  mongoose.connect(process.env.DATABASE_URL);
+const main = async () => {
+  mongoose.connect(process.env.DATABASE_URL, () => {
+    console.log("Connected to MongoDB");
+  });
 
   const app = express();
 
@@ -23,6 +26,41 @@ const main = () => {
       credentials: true,
     })
   );
+
+  const apolloServer = new ApolloServer({
+    schema: await buildSchema({
+      resolvers: [HelloResolver],
+      validate: false,
+    }),
+    plugins: [ApolloServerPluginLandingPageGraphQLPlayground()],
+  });
+
+  // const RedisStore = connectRedis(session)
+  // const redis = new Redis(process.env.REDIS_URL)
+  // app.set("proxy", 1)
+  // app.use(
+  //   cors({
+  //     origin: process.env.CORS_ORIGIN,
+  //     credentials: true
+  //   })
+  // )
+
+  // app.use(
+  //   session({
+  //     name: COOKIE_NAME,
+  //     store: new RedisStore({client: redis, disableTouch: true}),
+  //     secret: process.env.SESSION_SECRET,
+  //     cookie: {
+  //       maxAge: 1000 * 60 * 60 * 24 * 365 * 10,
+  //       httpOnly: true,
+  //       sameSite: "lax",
+  //     }
+  //   })
+  // )
+
+  await apolloServer.start();
+
+  apolloServer.applyMiddleware({ app, cors: false });
 
   app.listen(parseInt(process.env.PORT), () => {
     console.log("server started on localhost:4000");
