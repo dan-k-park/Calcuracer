@@ -1,4 +1,4 @@
-import { UsernamePasswordInput } from "./../resolvers/UsernamePasswordInput";
+import { UsernamePasswordInput } from "../resolvers/UsernamePasswordInput";
 
 const specialCharacters = [
   "'",

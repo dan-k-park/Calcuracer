@@ -1,29 +1,34 @@
-import { getModelForClass, mongoose, prop } from "@typegoose/typegoose";
+import { getModelForClass, prop as Property } from "@typegoose/typegoose";
+import { Field, ObjectType } from "type-graphql";
 
+@ObjectType()
 export class User {
-  @prop()
-  _id: mongoose.Types.ObjectId;
+  @Field()
+  _id!: string;
 
-  @prop({ required: true, unique: true })
-  username: string;
+  @Field()
+  @Property({ required: true, unique: true })
+  username!: string;
 
-  @prop({ required: true, unique: true })
+  @Property({ required: true, unique: true })
   email: string;
 
-  @prop({ required: true })
-  password: string;
+  @Field()
+  @Property({ required: true })
+  password!: string;
 
-  @prop()
+  @Field()
+  @Property()
   avatar?: string;
 
-  @prop()
+  @Property()
   title: string;
 
-  @prop()
+  @Property()
   matchesWon: number;
 
-  @prop({ type: () => [Object] })
-  fastestTimes: object[];
+  @Property({ type: () => [Number] })
+  fastestTimes: number[];
 }
 
 const UserModel = getModelForClass(User);
