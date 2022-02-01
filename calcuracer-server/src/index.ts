@@ -27,36 +27,43 @@ const main = async () => {
     })
   );
 
+  const RedisStore = connectRedis(session);
+  const redis = new Redis();
+  app.use(
+    cors({
+      origin: process.env.CORS_ORIGIN,
+      credentials: true,
+    })
+  );
+
+  app.use(
+    session({
+      name: COOKIE_NAME,
+      store: new RedisStore({ client: redis, disableTouch: true }),
+      secret: process.env.SESSION_SECRET,
+      cookie: {
+        maxAge: 1000 * 60 * 60 * 24 * 365 * 10,
+        httpOnly: true,
+        sameSite: "lax",
+        secure: __prod__,
+      },
+      saveUninitialized: false,
+      resave: false,
+    })
+  );
+
   const apolloServer = new ApolloServer({
     schema: await buildSchema({
-      resolvers: [HelloResolver],
+      resolvers: [HelloResolver, UserResolver],
       validate: false,
+    }),
+    context: ({ req, res }) => ({
+      req,
+      res,
+      redis,
     }),
     plugins: [ApolloServerPluginLandingPageGraphQLPlayground()],
   });
-
-  // const RedisStore = connectRedis(session)
-  // const redis = new Redis(process.env.REDIS_URL)
-  // app.set("proxy", 1)
-  // app.use(
-  //   cors({
-  //     origin: process.env.CORS_ORIGIN,
-  //     credentials: true
-  //   })
-  // )
-
-  // app.use(
-  //   session({
-  //     name: COOKIE_NAME,
-  //     store: new RedisStore({client: redis, disableTouch: true}),
-  //     secret: process.env.SESSION_SECRET,
-  //     cookie: {
-  //       maxAge: 1000 * 60 * 60 * 24 * 365 * 10,
-  //       httpOnly: true,
-  //       sameSite: "lax",
-  //     }
-  //   })
-  // )
 
   await apolloServer.start();
 
@@ -106,11 +113,11 @@ main();
 //       resolvers: [UserResolver],
 //       validate: false,
 //     }),
-//     context: ({ req, res }) => ({
-//       req,
-//       res,
-//       // redis,
-//     }),
+// context: ({ req, res }) => ({
+//   req,
+//   res,
+//   redis,
+// }),
 //     plugins: [ApolloServerPluginLandingPageGraphQLPlayground()],
 //   });
 
