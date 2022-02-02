@@ -6,6 +6,7 @@ import {
   FieldResolver,
   Mutation,
   ObjectType,
+  Query,
   Resolver,
   Root,
 } from "type-graphql";
@@ -36,6 +37,16 @@ class UserResponse {
 
 @Resolver(User)
 export class UserResolver {
+  @Query(() => User, { nullable: true })
+  me(@Ctx() { req }: Context) {
+    // not logged in
+    if (!req.session.userId) {
+      return null;
+    }
+
+    return UserModel.findOne(req.session.userId);
+  }
+
   @FieldResolver(() => String)
   email(@Root() user: User, @Ctx() { req }: Context) {
     if (req.session.userId.toString() === user._id) {
@@ -79,6 +90,34 @@ export class UserResolver {
     req.session.userId = new mongoose.Types.ObjectId(user?._id);
     return { user };
   }
+
+  @Mutation(() => UserResponse)
+  async login(
+    @Arg("usernameOrEmail") usernameOrEmail: string,
+    @Arg("password") password: string,
+    @Ctx() { req }: Context
+  ): Promise<UserResponse> {
+    // can currently log in to any user if password is the same fix that
+    const user = await UserModel.findOne(
+      usernameOrEmail.includes("@")
+        ? { where: { email: usernameOrEmail } }
+        : { where: { username: usernameOrEmail } }
+    );
+    if (!user) {
+      return {
+        errors: [{ field: "usernameOrEmail", message: "User does not exist." }],
+      };
+    }
+    const valid = await argon2.verify(user.password, password);
+    if (!valid) {
+      return {
+        errors: [{ field: "password", message: "Incorrect password." }],
+      };
+    }
+    req.session.userId = new mongoose.Types.ObjectId(user?._id);
+    return { user };
+  }
+
   @Mutation(() => UserResponse)
   async changePassword(
     @Arg("token") token: string,
