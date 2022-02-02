@@ -11,7 +11,7 @@ import {
   Root,
 } from "type-graphql";
 import UserModel, { User } from "../models/User";
-import { FORGET_PASSWORD_PREFIX } from "./../constants";
+import { COOKIE_NAME, FORGET_PASSWORD_PREFIX } from "./../constants";
 import argon2 from "argon2";
 import { UsernamePasswordInput } from "./UsernamePasswordInput";
 import { validateRegister } from "../utils/validateRegister";
@@ -97,12 +97,12 @@ export class UserResolver {
     @Arg("password") password: string,
     @Ctx() { req }: Context
   ): Promise<UserResponse> {
-    // can currently log in to any user if password is the same fix that
     const user = await UserModel.findOne(
       usernameOrEmail.includes("@")
         ? { where: { email: usernameOrEmail } }
         : { where: { username: usernameOrEmail } }
     );
+    console.log(user);
     if (!user) {
       return {
         errors: [{ field: "usernameOrEmail", message: "User does not exist." }],
@@ -116,6 +116,21 @@ export class UserResolver {
     }
     req.session.userId = new mongoose.Types.ObjectId(user?._id);
     return { user };
+  }
+
+  @Mutation(() => Boolean)
+  logout(@Ctx() { req, res }: Context) {
+    return new Promise((resolve) =>
+      req.session.destroy((err) => {
+        res.clearCookie(COOKIE_NAME);
+        if (err) {
+          console.log(err);
+          resolve(false);
+          return;
+        }
+        resolve(true);
+      })
+    );
   }
 
   @Mutation(() => UserResponse)
