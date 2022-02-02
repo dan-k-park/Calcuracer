@@ -14,6 +14,7 @@ import { FORGET_PASSWORD_PREFIX } from "./../constants";
 import argon2 from "argon2";
 import { UsernamePasswordInput } from "./UsernamePasswordInput";
 import { validateRegister } from "../utils/validateRegister";
+import mongoose from "mongoose";
 
 @ObjectType()
 class FieldError {
@@ -45,7 +46,8 @@ export class UserResolver {
   }
   @Mutation(() => UserResponse)
   async register(
-    @Arg("options") options: UsernamePasswordInput
+    @Arg("options") options: UsernamePasswordInput,
+    @Ctx() { req }: Context
   ): Promise<UserResponse> {
     const errors = validateRegister(options);
     if (errors) {
@@ -60,24 +62,21 @@ export class UserResolver {
         email: options.email,
       });
       user = result;
-      console.log(user);
     } catch (error) {
-      console.error("Error: ", error);
-      // duplicate username error
-      // find error code after creating an error intentionally
-      //  if (error.code === "23505") {
-      //   return {
-      //     errors: [
-      //       {
-      //         field: "username",
-      //         message: "username already taken",
-      //       },
-      //     ],
-      //   };
-      // }
+      if (error.code === 11000) {
+        return {
+          errors: [
+            {
+              field: "username",
+              message: "username already taken",
+            },
+          ],
+        };
+      }
     }
-    // FIX THIS LATER
-    // req.session.userId = user._id;
+
+    // This is so dumb haha
+    req.session.userId = new mongoose.Types.ObjectId(user?._id);
     return { user };
   }
   @Mutation(() => UserResponse)
